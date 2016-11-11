@@ -264,7 +264,8 @@ void Skylander::UpdateBuf(int block, int offset, int size, unsigned char val) {
 }
 
 
-bool Skylander::validateChecksum() {
+bool Skylander::validateChecksum(bool verbose) {
+    crc.verbose = verbose;
     // want to put the checksum files into a class.
     return crc.ValidateAllChecksums(data, false);
 }
@@ -273,7 +274,6 @@ void Skylander::computeChecksum() {
     // want to put the checksum files into a class.
     crc.ValidateAllChecksums(data, true);
 }
-
 
 // Write bytes to buffer
 static void UpdateBuf(unsigned char *buffer, int block, int offset, int size, unsigned char val) {

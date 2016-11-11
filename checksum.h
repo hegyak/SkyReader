@@ -15,6 +15,8 @@ public:
 
     unsigned short ComputeCcittCrc16(void const *, unsigned int);
 
+    bool verbose = false;
+
 protected:
 
     unsigned short UpdateCcittCrc16(unsigned short, unsigned char);

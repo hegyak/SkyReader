@@ -79,7 +79,7 @@ public:
 
     void setArea(int);
 
-    bool validateChecksum();
+    bool validateChecksum(bool);
 
     void computeChecksum();
 

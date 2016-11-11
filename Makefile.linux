@@ -1,6 +1,7 @@
 # Linux 32-bit Makefile by capull0
 
 CFLAGS=-I/usr/include/libusb-1.0 -g -pthread -m32
+CPPFLAGS=-std=c++11
 LDFLAGS= -lusb-1.0 -lrt -pthread
 OBJ= checksum.o fileio.o md5.o toynames.o rijndael.o crypt.o skylander.o main.o hid.o
 
@@ -19,7 +20,7 @@ hid.o: hid_linux.c
 	gcc $(CFLAGS) -c -o $@ $<
 
 %.o:%.cpp
-	g++ $(CFLAGS) -c $<
+	g++ $(CFLAGS) $(CPPFLAGS) -c $<
 
 clean:
 	rm -f *.o usbtest

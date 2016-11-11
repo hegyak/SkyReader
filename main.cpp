@@ -27,6 +27,7 @@ void usage() {
                    "-e\t\tencrypt data when writing file.\n"
                    "-D\t\tdump the data of a skylander to the display.\n"
                    "-l\t\tList skylanders on portal.\n"
+                   "-v\t\tverbose\n"
 
                    "\nUpgrade:\n"
                    "-M <money>\tupgrade skylander money (max 65,000).\n"
@@ -65,11 +66,11 @@ int main(int argc, char *argv[]) {
     unsigned char *buffer, *original_data;
     bool OK, OK2;
 
-    bool encrypt, decrypt, portalIn, portalOut, dump, upgrade, flash, list, autoFile;
+    bool encrypt, decrypt, portalIn, portalOut, dump, upgrade, flash, list, autoFile, verbose;
 
     char *inFile, *outFile;
 
-    const static char *legal_flags = "alFePpcDo:i:dM:X:H:C:L:R:s:";
+    const static char *legal_flags = "alFePpcDvo:i:dM:X:H:C:L:R:s:";
 
     encrypt = false;
     decrypt = false;
@@ -82,6 +83,7 @@ int main(int argc, char *argv[]) {
     flash = false;
     list = false;
     autoFile = false;
+    verbose = false;
 
     unsigned int money, xp, hp, challenges, skillleft, skillright, skylander_number;
     bool pathleft, pathright;
@@ -120,6 +122,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'F':
                 flash = true;
+                break;
+            case 'v':
+                verbose = true;
                 break;
             case 'i':
                 inFile = new char[strlen(optarg) + 1];
@@ -237,7 +242,7 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        if (!skio->getSkylander()->validateChecksum()) {
+        if (!skio->getSkylander()->validateChecksum(verbose)) {
             fprintf(stderr,
                     "Warning. Skylander data read from portal, but checksums are incorrect.  File may be corrupt.\n");
         }
