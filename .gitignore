@@ -7,3 +7,6 @@ usbtest
 bin
 build
 skylanders
+*.bin
+.idea
+*.iml

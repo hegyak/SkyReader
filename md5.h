@@ -31,15 +31,16 @@ documentation and/or software.
 
 typedef unsigned long UINT4;
 
-typedef struct
-{
-	UINT4 state[4];
-	UINT4 count[2];
-	unsigned char buffer[64];
+typedef struct {
+    UINT4 state[4];
+    UINT4 count[2];
+    unsigned char buffer[64];
 } MD5;
 
 void MD5Open(MD5 *);
+
 void MD5Digest(MD5 *, const void *, unsigned int);
+
 void MD5Close(MD5 *, unsigned char[16]);
 
 #endif

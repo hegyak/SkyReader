@@ -20,35 +20,45 @@
 #define MAX_STR 255
 
 
-typedef struct  {
-	unsigned char buf[rw_buf_size];
-	int dwBytesTransferred;
+typedef struct {
+    unsigned char buf[rw_buf_size];
+    int dwBytesTransferred;
 } RWBlock;
 
 class PortalIO {
 
-	hid_device *hPortalHandle;
-	
-public:
-	PortalIO() throw (int);
-	~PortalIO();
-	
-	bool WriteSkylanderToPortal(unsigned char *, unsigned char *);
-	
-	bool ReadBlock (unsigned int , unsigned char [0x10], int ) throw (int); 
-	void SetPortalColor(unsigned char , unsigned char , unsigned char ) throw (int);
-	bool WriteBlock(unsigned int , unsigned char [0x10], int ) throw (int);
+    hid_device *hPortalHandle;
 
-	void flash (void) throw (int);
-	
+public:
+    PortalIO() throw(int);
+
+    ~PortalIO();
+
+    bool WriteSkylanderToPortal(unsigned char *, unsigned char *);
+
+    bool ReadBlock(unsigned int, unsigned char [0x10], int) throw(int);
+
+    void SetPortalColor(unsigned char, unsigned char, unsigned char) throw(int);
+
+    bool WriteBlock(unsigned int, unsigned char [0x10], int) throw(int);
+
+    void flash(void) throw(int);
+
 private:
-	void OpenPortalHandle() throw (int);
-	void Write(RWBlock *) throw (int);
-	void RestartPortal(void) throw (int);
-	void ActivatePortal(int) throw (int);
-	unsigned char PortalStatus() throw (int);
-	void DisconnectPortal(void);
-	void ConnectToPortal(void) throw (int);
-	bool CheckResponse (RWBlock *, char ) throw (int); 
+    void OpenPortalHandle() throw(int);
+
+    void Write(RWBlock *) throw(int);
+
+    void RestartPortal(void) throw(int);
+
+    void ActivatePortal(int) throw(int);
+
+    unsigned char PortalStatus() throw(int);
+
+    void DisconnectPortal(void);
+
+    void ConnectToPortal(void) throw(int);
+
+    bool CheckResponse(RWBlock *, char) throw(int);
 
 }; 
