@@ -14,7 +14,7 @@ using namespace std;
 void usage() {
     printf("\n"
                    "Usage:\n"
-                   "editor [-i <file>|-p] [-s <skylander>] [-d] [-e] [-o <file>|-P] [-M <money>] [-X experience] ... \n"
+                   "editor [-i <file>|-p] [-s <skylander>] [-d] [-e] [-o <file>|-P] [-M <money>] [-X experience] [-G level]... \n"
                    "\n"
                    "Reading/Writing:\n"
                    "-i <file>\tread skylander data from file, with option to decrypt the data.\n"
@@ -31,7 +31,8 @@ void usage() {
 
                    "\nUpgrade:\n"
                    "-M <money>\tupgrade skylander money (max 65,000).\n"
-                   "-X <xp>\t\tupgrade skylander Experience (level 10 = 33,000).\n"
+                   "-X <xp>\t\tupgrade skylander Experience (level 20 = 197500).\n"
+                   "-G <level>\t\tupgrade skylander level (max 20).\n"
                    "-H <hp>\t\tupgrade skylander Hero Points (max 100).\n"
                    "-C <challenges>\tupgrade skylander challenges.\n"
                    "-L <points>\tupgrade the skillpoints left path. (0 = set path)\n"
@@ -70,7 +71,7 @@ int main(int argc, char *argv[]) {
 
     char *inFile, *outFile;
 
-    const static char *legal_flags = "alFePpcDvo:i:dM:X:H:C:L:R:s:";
+    const static char *legal_flags = "alFePpcDvo:i:dM:X:G:H:C:L:R:s:";
 
     encrypt = false;
     decrypt = false;
@@ -85,11 +86,12 @@ int main(int argc, char *argv[]) {
     autoFile = false;
     verbose = false;
 
-    unsigned int money, xp, hp, challenges, skillleft, skillright, skylander_number;
+    unsigned int money, xp, level, hp, challenges, skillleft, skillright, skylander_number;
     bool pathleft, pathright;
 
     money = 0;
     xp = 0;
+    level = 0;
     hp = 0;
     challenges = 0;
     skillleft = 0;
@@ -145,6 +147,10 @@ int main(int argc, char *argv[]) {
                 break;
             case 'X':
                 xp = atoi(optarg);
+                upgrade = true;
+                break;
+            case 'G':
+                level = atoi(optarg);
                 upgrade = true;
                 break;
             case 'H':
@@ -255,17 +261,22 @@ int main(int argc, char *argv[]) {
             Skylander *sky;
             sky = skio->getSkylander();
 
+            if (verbose)
+                sky->dump();
+
             printf("Serial Number: %08lX\n", sky->getSerial());
             printf("Toy Type: %s (%d)\n\n", sky->getToyTypeName(), sky->getToyType());
             printf("Trading ID: ");
             skio->fprinthex(stdout, sky->getTradingID(), 8);
 
             //Debugging Use
-            printf("Area 0 sequence: %d\n", sky->getArea0Sequence());
-            printf("Area 1 sequence: %d\n", sky->getArea1Sequence());
-            printf("Area %d selected (higher sequence)\n\n", sky->getArea());
-
+            if (verbose) {
+                printf("Area 0 sequence: %d\n", sky->getArea0Sequence());
+                printf("Area 1 sequence: %d\n", sky->getArea1Sequence());
+                printf("Area %d selected (higher sequence)\n\n", sky->getArea());
+            }
             printf("Experience: %d\n", sky->getXP());
+            printf("Level: %d\n", sky->getLevel());
             printf("Money: %d\n", sky->getMoney());
             printf("Skills: %04X - %s\n", sky->getSkill(), sky->getPath());
             printf("Platforms: %s\n", sky->getPlatformName());
@@ -277,12 +288,20 @@ int main(int argc, char *argv[]) {
         }
 
         if (upgrade) {
-            if (money) { skio->getSkylander()->setMoney(money); }
-            if (xp) { skio->getSkylander()->setXP(xp); }
-            if (hp) { skio->getSkylander()->setHeroPoints(hp); }
-            if (challenges) { skio->getSkylander()->setHeroicChallenges(challenges); }
-            if (pathleft) { skio->getSkylander()->setSkillLeft(skillleft); }
-            if (pathright) { skio->getSkylander()->setSkillRight(skillright); }
+            if (money)
+                skio->getSkylander()->setMoney(money);
+            if (level)
+                skio->getSkylander()->setLevel(level);
+            else if (xp)
+                skio->getSkylander()->setXP(xp);
+            if (hp)
+                skio->getSkylander()->setHeroPoints(hp);
+            if (challenges)
+                skio->getSkylander()->setHeroicChallenges(challenges);
+            if (pathleft)
+                skio->getSkylander()->setSkillLeft(skillleft);
+            if (pathright)
+                skio->getSkylander()->setSkillRight(skillright);
 
             skio->getSkylander()->computeChecksum();
         }

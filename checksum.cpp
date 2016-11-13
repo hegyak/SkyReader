@@ -54,8 +54,12 @@ unsigned short Checksum::ComputeCcittCrc16(void const *data, unsigned int bytes)
     unsigned short crc = 0xffff;
     unsigned char const *numPtr = (unsigned char const *) data;
     for (unsigned int i = 0; i < bytes; i++) {
+        if (verbose)
+            printf("%02X ", *((unsigned char *) (numPtr + i)));
         crc = UpdateCcittCrc16(crc, *((unsigned char const *) (numPtr + i)));
     }
+    if (verbose)
+        printf("\n");
     return crc;
 }
 
@@ -139,9 +143,10 @@ bool Checksum::computeChecksum(int type, void const *memoryIn, unsigned short *c
                 *(header) = 6;
                 *(header + 1) = 1;
             }
+            if (verbose) {
+                printf("HEADER:%04X: ", (dataOffset * 0x10));
+            }
             *checksum = ComputeCcittCrc16((void const *) &header, 0x10);
-            if (verbose)
-                printf("HEADER :%X", *(header + 1));
 
             if (type == 1) {
                 return true;
@@ -151,6 +156,7 @@ bool Checksum::computeChecksum(int type, void const *memoryIn, unsigned short *c
             return true;
         }
     }
+
     if (type == 2) {
         startBlock = 1;
         cntBlock = 4;
@@ -167,7 +173,8 @@ bool Checksum::computeChecksum(int type, void const *memoryIn, unsigned short *c
     numPtr += (startBlock * 0x10);
 
     if (type != 4)
-        *checksum = 0xffff;
+        *
+                checksum = 0xffff;
 
     block = startBlock;
     while (true) {
@@ -178,13 +185,20 @@ bool Checksum::computeChecksum(int type, void const *memoryIn, unsigned short *c
             block = startBlock + cntBlock;
             break;
         }
-        if (!crypt.IsAccessControlBlock(block)) {
+        if (!crypt.
+                IsAccessControlBlock(block)
+                ) {
             if (verbose)
-                printf("block:%02X: ", int(numPtr));
-            for (unsigned int i = 0; i < 0x10; i++) {
+                printf(" block:%04X: ",
+                       int(block
+                           * 0x10));
+            for (
+                    unsigned int i = 0;
+                    i < 0x10; i++) {
                 if (verbose)
                     printf("%02X ", *((unsigned char *) (numPtr + i)));
-                *checksum = UpdateCcittCrc16(*checksum, *((unsigned char *) (numPtr + i)));
+                *
+                        checksum = UpdateCcittCrc16(*checksum, *((unsigned char *) (numPtr + i)));
             }
             if (verbose)
                 printf("\n");
@@ -193,18 +207,25 @@ bool Checksum::computeChecksum(int type, void const *memoryIn, unsigned short *c
         block++;
     }
 
-    // Pad Type 3 checksum with 0x0E blocks of zeroes
+// Pad Type 3 checksum with 0x0E blocks of zeroes
     while (block < 0x1c) {
-        if (!crypt.IsAccessControlBlock(block)) {
+        if (!crypt.
+                IsAccessControlBlock(block)
+                ) {
             if (verbose)
-                printf("padding with 0: ");
-            for (unsigned int j = 0; j < 0x10; j++) {
+                printf(" block:%04X: ",
+                       int(block
+                           * 0x10));
+            for (
+                    unsigned int j = 0;
+                    j < 0x10; j++) {
                 if (verbose)
                     printf("%02X ", 0);
-                *checksum = UpdateCcittCrc16(*checksum, 0);
+                *
+                        checksum = UpdateCcittCrc16(*checksum, 0);
             }
             if (verbose)
-                printf("\n");
+                printf(" (padding with 0)\n");
         }
         block++;
     }
@@ -231,8 +252,9 @@ bool Checksum::validateChecksum(unsigned char *buffer, int type, int dataArea, b
     unsigned char *ptr;
     bool match;
 
-    printf("\n------ validateChecksum type=%i dataAera=%i overwrite=%i ------------------\n", type, dataArea,
-           overwrite);
+    if (verbose)
+        printf("\n------ validateChecksum type=%i dataAera=%i overwrite=%i ------------------\n", type, dataArea,
+               overwrite);
 
     if (!getChecksumParameters(type, &checksumOffset, &dataOffset, &dataLength)) {
         return false;
@@ -269,6 +291,10 @@ bool Checksum::validateChecksum(unsigned char *buffer, int type, int dataArea, b
     if (!computeChecksum(type, ptr, &computedChecksum)) {
         return false;
     }
+
+    if (type == 4)
+        ptr += 0x90;
+
     unsigned short oldChecksum = (unsigned short) ((ptr[checksumOffset] & 0xff) |
                                                    ((ptr[(int) (checksumOffset + 1)] & 0xff) << 8));
     if (verbose)
@@ -295,7 +321,7 @@ bool Checksum::ValidateAllChecksums(unsigned char *buffer, bool overwrite) {
     //
     // In the logic below, the area sequence number is set just prior to computing checksum 1.
     for (dataArea = 0; dataArea <= 1; dataArea++) {
-        for (type = 3; type >= 0; type--) {
+        for (type = 4; type >= 0; type--) {
             res = validateChecksum(buffer, type, dataArea, overwrite);
             if (!res && !overwrite) {
                 fprintf(stderr, "Checksum %sfailure%s for checksum type %d, data area %d\n\n", KRED, KWHT, type,

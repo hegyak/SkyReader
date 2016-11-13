@@ -12,7 +12,7 @@
  0x01    N/A     0x04    0x08    Trading card ID.
  0x01    N/A     0x0C    0x02    Alter Egos / Trap Type (e.g. 0030 for Krypt King / 0234 for Nitro Krypt King; with Toy ID d600 (tech trap): 0030 Tech Totem, 0730 Automatic Angel, 0930 Factory Flower, etc)
  0x01    N/A     0x0E    0x02    Type 0 CRC16 checksum. AKA CRC16CCITT with a seed of 0xFFFF
- 0x08    0x24    0x00    0x03    24-bit experience/level value. Maximum 33000 here.
+ 0x08    0x24    0x00    0x03    24-bit experience/level value. Maximum 33000 here. (up to level 10)
  0x08    0x24    0x03    0x02    16-bit money value. Maximum 65000. Set it higher and the game rounds down to 65000.
  0x08    0x24    0x05    0x02    Unknown.
  0x08    0x24    0x07    0x02    Unknown. Zeroes for me.
@@ -34,7 +34,9 @@
  0x0D    0x29    0x0E    0x01    Unknown. 01 for me.
  0x10    0x2C    0x00    0x0C    Unknown. Zeroes for me.
  0x10    0x2C    0x0C    0x04    32 bit flag value indicating heroic challenges completed.
- 
+ 0x11    0x2D    0x00    0x02    Type 4 CRC16 checksum
+ 0x11    0x2D    0x03    0x02    16-bit experience/level value. Maximum 65300 here. (level 11 - 15)
+ 0x11    0x2D    0x08    0x03    24-bit experience/level value. Maximum 99200 here. (level 16 - 20)
  */
 
 void Skylander::fprinthex(FILE *f, unsigned char *c, unsigned int n) {
@@ -101,6 +103,7 @@ void Skylander::readName() {
 
     int block = getBlockNumberForArea() + 2;
     for (int i = 0; i < 15; i++) {
+        //int offset = (i) & 0xf;  // for crystal names
         int offset = (i * 2) & 0xf;
         if (i == 8) { block += 2; }
 
@@ -115,14 +118,22 @@ void Skylander::readName() {
 void Skylander::setAreaFromSequence() {
     area = 0;
     if (getArea0Sequence() < getArea1Sequence()) { area = 1; }
+    area2 = 0;
+    if (getArea0Sequence2() < getArea1Sequence2()) { area2 = 1; }
 }
 
 int Skylander::getBlockNumberForArea() { return (area == 0) ? 0x08 : 0x24; }
 
+int Skylander::getBlockNumberForArea2() { return (area2 == 0) ? 0x11 : 0x2d; }
+
 // should validate for 0 or 1
 void Skylander::setArea(int a) { if (a == 1 || a == 0) { area = a; }}
 
+void Skylander::setArea2(int a) { if (a == 1 || a == 0) { area2 = a; }}
+
 int Skylander::getArea() { return area; }
+
+int Skylander::getArea2() { return area2; }
 
 unsigned long Skylander::getSerial() { return getShort(0x00, 0x00) + getShort(0x00, 0x02) * 0x10000; }
 
@@ -134,21 +145,102 @@ unsigned char *Skylander::getTradingID() { return data + 20; }
 
 unsigned int Skylander::getXP() {
     int block = getBlockNumberForArea();
-    return getByte(block, 0) + getByte(block, 1) * 0x100 + getByte(block, 2) * 0x10000;
+    int block2 = getBlockNumberForArea2();
+
+    return getByte(block, 0) + getByte(block, 1) * 0x100 + getByte(block, 2) * 0x10000 +
+           getByte(block2, 3) + getByte(block2, 4) * 0x100 +
+           getByte(block2, 8) + getByte(block2, 9) * 0x100 + getByte(block2, 10) * 0x10000;
 }
 
 void Skylander::setXP(unsigned int xp) {
+    if (xp > 197500)
+        xp = 197500;
 
-    if (xp < 0x1000000) {
-        int block = getBlockNumberForArea();
+    int block = getBlockNumberForArea();
+    int block2 = getBlockNumberForArea2();
 
-        setByte(block, 0, xp & 0xff);
-        setByte(block, 1, (xp & 0xff00) / 0x100);
-        setByte(block, 2, (xp & 0xff0000) / 0x10000);
+    int xp1 = 0;
+    int xp2 = 0;
+    int xp3 = 0;
+
+    if (xp > 96500) {
+        xp1 = 33000;
+        xp2 = 63500;
+        xp3 = xp - xp1 - xp2;
+    } else if (xp > 33000) {
+        xp1 = 33000;
+        xp2 = xp - 33000;
+    } else {
+        xp1 = xp;
     }
 
+    setByte(block, 0, xp1 & 0xff);
+    setByte(block, 1, (xp1 & 0xff00) / 0x100);
+    setByte(block, 2, (xp1 & 0xff0000) / 0x10000);
+
+    setByte(block2, 3, xp2 & 0xff);
+    setByte(block2, 4, (xp2 & 0xff00) / 0x100);
+
+    setByte(block2, 8, xp3 & 0xff);
+    setByte(block2, 9, (xp3 & 0xff00) / 0x100);
+    setByte(block2, 10, (xp3 & 0xff0000) / 0x10000);
 }
 
+unsigned int Skylander::getLevel() {
+    unsigned int xp = getXP();
+
+    return calcLevel(xp, 0);
+}
+
+void Skylander::setLevel(unsigned int set_level) {
+
+    if (set_level > 20)
+        set_level = 20;
+
+    unsigned int xp = calcLevel(0, set_level);
+
+    setXP(xp);
+}
+
+unsigned int Skylander::calcLevel(unsigned int xp, unsigned int set_level) {
+    unsigned int level = 0;
+    unsigned int level_xp = 0;
+    unsigned int add = 0;
+    unsigned int f = 200;
+
+    if (xp == 0 && set_level == 0)
+        xp = 1;
+
+    if (xp > 33000 || set_level > 10) {
+        add = 9700;
+        for (level = 1; level <= 11; level++) {
+
+            if (set_level == 0 && (level_xp + 33000) >= xp)
+                return level + 9;
+
+            if ((level + 9) == set_level)
+                return level_xp + 33000;
+
+            level_xp += add;
+            add += 1500;
+        }
+    } else {
+        add = 1000;
+        for (level = 1; level <= 10; level++) {
+
+            if (set_level > 0 && level == set_level)
+                return level_xp;
+
+            level_xp += add;
+            add += f * level;
+
+            if (xp > 0 && level_xp > xp)
+                return level;
+        }
+    }
+
+    return 0;
+}
 
 unsigned short Skylander::getMoney() {
     int block = getBlockNumberForArea();
@@ -164,6 +256,10 @@ void Skylander::setMoney(unsigned short money) {
 unsigned char Skylander::getArea0Sequence() { return getByte(0x08, 0x09); }
 
 unsigned char Skylander::getArea1Sequence() { return getByte(0x24, 0x09); }
+
+unsigned char Skylander::getArea0Sequence2() { return getByte(0x11, 0x02); }
+
+unsigned char Skylander::getArea1Sequence2() { return getByte(0x2d, 0x02); }
 
 unsigned short Skylander::getSkill() {
     int block = getBlockNumberForArea();

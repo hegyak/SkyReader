@@ -13,6 +13,7 @@ class Skylander {
     unsigned char data[SKYLANDER_SIZE];
     char name[16];
     int area;
+    int area2;
     Checksum crc;
 
 public:
@@ -37,6 +38,12 @@ public:
 
     void setXP(unsigned int);
 
+    unsigned int getLevel();
+
+    void setLevel(unsigned int);
+
+    unsigned int calcLevel(unsigned int, unsigned int);
+
     unsigned short getMoney();
 
     void setMoney(unsigned short);
@@ -44,6 +51,10 @@ public:
     unsigned char getArea0Sequence();
 
     unsigned char getArea1Sequence();
+
+    unsigned char getArea0Sequence2();
+
+    unsigned char getArea1Sequence2();
 
     unsigned short getSkill();
 
@@ -75,9 +86,15 @@ public:
 
     void setAreaFromSequence();
 
+    void setAreaFromSequence2();
+
     int getArea();
 
+    int getArea2();
+
     void setArea(int);
+
+    void setArea2(int);
 
     bool validateChecksum(bool);
 
@@ -109,6 +126,8 @@ private:
     void setShort(int, int, unsigned short);
 
     int getBlockNumberForArea();
+
+    int getBlockNumberForArea2();
 
     void readName();
 
